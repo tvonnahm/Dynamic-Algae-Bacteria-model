@@ -1,17 +1,22 @@
 ##################################################################################
-### Script for running, plotting, and fitting the EXT model to BAC- and BAC+ data
-### Tobias Reiner Vonnahme, UiT the Arctic University of Norway #################
-### v1.0 09.11.2020 #############################################################
-### Replication script to: https://doi.org/10.5194/bg-2020-314 ##################
-#################################################################################
-### Geider98v3 needed ###########################################################
-
-
+### Script for running, plotting, and fitting the EXT model to BAC- and BAC+ data#
+### Tobias Reiner Vonnahme, UiT the Arctic University of Norway ##################
+### v1.0 09.11.2020 ##############################################################
+### Replication script to: https://doi.org/10.5194/bg-2020-314 ###################
+### Data of this script under https://doi.org/10.18710/VA4IU9 ####################
+##################################################################################
+### Dependendy: Geider98v3.R #####################################################
+###             FME package  #####################################################
+###             deSolve package ##################################################
+##################################################################################
 
 # Input: t, x (Cf, Cr, Chl, N, r, DOC, resdoc, pcho, DON, TEPC, bactc, bactn, DIN)
 
-#parameters START
+####################################################################################
+## 1) Parameter definition #########################################################
+####################################################################################
 
+#parameters START
 #parameters and variables
 #___________________________________________________________
 # C   - Carbon content (starting condition, modelled)
@@ -20,45 +25,44 @@
 # pc  - C-specific rate of photosynthesis (calculated)
 # Pcmax - maximum value of pc at given temperature (calculated)
 # Pcref - Value of PCmax at a given reference temperature (calculated)
-Pcref <-   0.8#
+Pcref <-   0.8
 # cost - Cost of biosynthesis (parameter)
-cost <- 1 # 
+cost <- 1 
 # Vcn  - max N uptake (calculated)
 # Rc   - carbon based maintenance metabolic rate constant (parameter)
-Rc <- 0.01 # 
+Rc <- 0.01 
 xf <- 0.06
 # Rchl and RN - Chl and N based maintenance metabolic rates(calculated)
 # pchl - carbon specific light limited photosynt. rate (calculated)
 # thetac - Chl : C ratio in the cell (calculated)
 # thetan - Chl : N ratio in the cell (Calculated)
 # thetanmax - max thetan (parameter)
-thetanmax <- 1.7 # 
+thetanmax <- 1.7  
 # Q    - N : C ratio in the cell (calculated)
 # Qmin - minimum value of Q (parameter)
-Qmin <- 0.05 # 
+Qmin <- 0.05 
 # Qmax - maximum value of Q (parameter)
-Qmax <- 0.3 #
+Qmax <- 0.3 
 # Alfchl - Chl specific linitial C assimilation rate (parameter)
-Alfchl <- 0.076 # 
+Alfchl <- 0.076  
 # I   - incident scalar irradiance (variable, model input)
 I <- 100 # (measured)
 # my  - specific growth rate (calculated)
 # DIN - inorganic n in medium (variable, model input) in uM
-#DIN <- 35
 # n   - shape factor describing dependence of Vcmax on Q
-n <- 3.45 # 
+n <- 3.45 
 # kn  - half saturation constant for nitrogen uptake (parameter)
-kn <- 2 #
-kn2 <- 6.97#
-nh4thres <- 1.19#
-SiPS <- 0.20##Photosynthesis reduction after Si limitation
+kn <- 2 
+kn2 <- 6.97
+nh4thres <- 1.19
+SiPS <- 0.20 #Photosynthesis reduction after Si limitation
 
-Vmax <- 0.1 #
-ks <-7.6 #
-smin <- 1.82 # 
+Vmax <- 0.1 
+ks <-7.6 
+smin <- 1.82  
 
 rem <-  10 # remineralisation rate of excreted don (correction for bact C)
-remd <-  4.86#4.83#4.9 # remineralisation rate of background don (correction for bact C)
+remd <-  4.86 # remineralisation rate of background don (correction for bact C)
 mubact <-0.04 # bacterial max growth rate
 bactmax <-15/1000 # bacterial capacity
 paramMod<-c(cost=cost, Rc=Rc, thetanmax=thetanmax, Qmin=Qmin, Qmax=Qmax, 
@@ -67,44 +71,48 @@ paramMod<-c(cost=cost, Rc=Rc, thetanmax=thetanmax, Qmin=Qmin, Qmax=Qmax,
             mubact=mubact, bactmax=bactmax,
             kn2=kn2, nh4thres=nh4thres, SiPS=SiPS) 
 pars<-paramMod
-# state variable END
+# parameter and variables END
 
-tspan <- seq(1, 16, 0.01)
+tspan <- seq(1, 16, 0.01) # time of model run in days (16)
 
-require(deSolve)
-source('geider98v3.R')
+require(deSolve) # load package for solving differential equations
+source('geider98v3.R') # load model function
 
-# axenic
+########################################################################
+### 2) Model fits to experiments #######################################
+########################################################################
+
+# Model fit to axenic experiment 
 # Input: t, x (Cf, Cr, Chl, N, r, DOC, resdoc, pcho, DON, TEPC, bactc, bactn, DIN)
-# state variable START
-C0 <- 1203  / 1000
-Chl0 <-62.3  / 1000
-N0 <-89.2  / 1000
-DIN0 <- 89#
-DIN0<-49.1#
-nh40 <- 4.4#
-cell0 <- 7980 /1000
+# define start variables
+C0 <- 1.203   
+Chl0 <-0.0623  
+N0 <-0.0892  
+DIN0<-49.1
+nh40 <- 4.4
+cell0 <- 7.980
 Si0 <- 23
-PSi0 <- 7980  * 104 *10e-07 *3.9  # 
+PSi0 <- 7980  * 104 *10e-07 *3.9   
 don0 <- 2800/16  
-bact0 <- 0#
+bact0 <- 0
 
-x0 <- c(C0, Chl0, N0, DIN0, PSi0, Si0, bact0, 0, 0, don0, nh40) # 
+# organize start variables into input vector
+x0 <- c(C0, Chl0, N0, DIN0, PSi0, Si0, bact0, 0, 0, don0, nh40)  
 x <- x0
 
+# run the model
 out_axenic <- ode(x0, times = tspan, func = geider98v2, parms = paramMod, method= "rk")
 
 
-# with bact
-
-# state variable START
-C0 <- 1203  / 1000
-Chl0 <-62.3  / 1000
-N0 <-89.2  / 1000
-DIN0 <- 89#
-DIN0<-56.4 #
-nh40 <- 20.5 #
-cell0 <- 7980 /1000
+# Model fit to bacteria enriched experiment
+# define start variable 
+C0 <- 1.203 
+Chl0 <-0.0623
+N0 <-0.0892 
+DIN0 <- 89
+DIN0<-56.4 
+nh40 <- 20.5 
+cell0 <- 7.980
 Si0 <- 23
 PSi0 <- 7980  * 104 *10e-07 *3.9  #
 don0 <- 2800/16  
@@ -116,9 +124,10 @@ x <- x0
 out_bact <- ode(x0, times = tspan, func = geider98v2, parms = paramMod, method= "rk")
 
 ################################
-
-Rc <- Rc + xf #
-xf <- 0.0#
+# Model runs without excretion
+# excretion is redefined as maintenance metabolic loss rate
+Rc <- Rc + xf 
+xf <- 0.0
 
 paramMod<-c(cost=cost, Rc=Rc, thetanmax=thetanmax, Qmin=Qmin, Qmax=Qmax, 
             Alfchl=Alfchl, I=I, n=n, kn=kn, Pcref=Pcref, xf=xf,
@@ -127,7 +136,7 @@ paramMod<-c(cost=cost, Rc=Rc, thetanmax=thetanmax, Qmin=Qmin, Qmax=Qmax,
             kn2=kn2, nh4thres=nh4thres, SiPS= SiPS) 
 pars<-paramMod
 
-# axenic
+# Model fit to axenic experiment
 # Input: t, x (Cf, Cr, Chl, N, r, DOC, resdoc, pcho, DON, TEPC, bactc, bactn, DIN)
 # state variable START
 C0 <- 1203  / 1000
@@ -147,8 +156,7 @@ x <- x0
 
 out_axenic_noEX <- ode(x0, times = tspan, func = geider98v2, parms = paramMod, method= "rk")
 
-# with bact
-
+# Model fit to bacteria enriched experiment
 # state variable START
 C0 <- 1203  / 1000
 Chl0 <-62.3  / 1000
@@ -167,21 +175,11 @@ x <- x0
 
 out_bact_noEX <- ode(x0, times = tspan, func = geider98v2, parms = paramMod, method= "rk")
 
+############################################################################################
+### 3) Define measured values in the experimnents ##########################################
+###########################################################################################
 
-
-##########################
-
-
-
-
-# measured values in the experiment
-
-### Model end
-# measured values in the experiment
-#time in days
-
-
-#### HERE WITH BACTERIA!!!!
+#### WITH BACTERIA
 texp<-c(1,2,3,4,5,6,7,8,9,10,11,14,15,16)
 
 cexp<-c(1314,1385,1477,2177,2531,3407,5066,5214,6208,4228,7177,8233,7030,8484)/1000
@@ -235,7 +233,7 @@ bactexpmax<-c(5.30E+04,3.96E+04,5.86E+04,2.75E+05,1.15E+06,2.50E+06,4.71E+06,
 
 
 ###############################
-### withOUT Bacteria
+### withOUT Bacteria #########
 
 #time in days
 texpout<- c(1,2,3,4,5,6,7,8,9,10,11,14,15,16)
@@ -306,16 +304,12 @@ siexpminout<-c(12.6,11.1,11.5,2.9,0.1,0.2,0.7,0.6,0.3)
 siexpmaxout<-c(29.5,20.3,13.8,5.6,1.1,1.0,1.5,0.9,0.9)
 
 ##############################################################
+### 4) Pot the model outputs with data #######################
+##############################################################
+
 # POC plot
-
-#pdf(file="Fig5_modpap_rev2.pdf")#, width=600, height=750)
-tiff(file="Fig5_modpap_rev2.tiff", width=600, height=750, compression="none")
-
 par(mar=c(5.1,5.1,4.1,2.1))
 par(mfrow=c(3,2))
-
-#par(mfrow=c(1,2))
-
 plot(texp, cexpmax, type='n', 
      ylab = expression(paste("Carbon [",mu,"g mL"^"-1","]")), 
      xlab = "time [days ]",ylim=c(0,10), xlim=c(0,15),
@@ -394,10 +388,7 @@ lines(tspan, out_bact[,3], col="red")
 lines(tspan, out_axenic_noEX[,3], col="blue", lty="dotted")
 lines(tspan, out_bact_noEX[,3], col="red",lty="dotted")
 
-
-
 # POC:PON plot
-
 plot(texp, cexpmax/nexpmin, type='n', 
      ylab = expression(paste("C : N ratio [",mu,"g C : ",mu,"g N]")), 
      xlab = "time [days ]",ylim=c(0,25), xlim=c(0,16),
@@ -424,7 +415,6 @@ lines(tspan, out_bact_noEX[,2]/out_bact_noEX[,4], col="red", lty="dotted")
 
 
 # C:Chl plot
-
 plot(texp, cexpmax/chlexpmin, type='n', 
      ylab = expression(paste("C : Chl ratio [",mu,"g C : ",mu,"g Chl]")), 
      xlab = "time [days ]",ylim=c(0,40), xlim=c(0,16),
@@ -451,7 +441,6 @@ lines(tspan, out_bact_noEX[,2]/out_bact_noEX[,3], col="red", lty="dotted")
 
 
 # N/Chl plot
-
 plot(texp, nexpmax/chlexpmin, type='n', 
      ylab = expression(paste("N : Chl ratio [",mu,"g N : ",mu,"g Chl]")), 
      xlab = "time [days ]",ylim=c(0,6.2), xlim=c(0,16),
@@ -481,13 +470,12 @@ dev.off()
 
 
 ##########################################################
-#pdf(file="Fig6_modpap_rev2.pdf")#, width=600)
-tiff(file="Fig6_modpap_rev2.tiff", width=600, compression="none")
+
+
 par(mar=c(5.1,5.1,4.1,2.1))
 par(mfrow=c(2,2))
 
-# DIN cells plot
-
+# DIN plot
 DINexp<-dinexp+nh4exp
 DINexpmax<-dinexpmax+nh4expmax
 DINexpmin<-dinexpmin+nh4expmin
@@ -521,7 +509,7 @@ lines(tspan, out_axenic_noEX[,5]+out_axenic_noEX[,12], col="blue", lty="dotted")
 lines(tspan, out_bact_noEX[,5]+out_bact_noEX[,12], col="red", lty="dotted")
 
 
-# NOx cells plot
+# NOx plot
 plot(tdinexp, dinexpmax, type='n', 
      ylab = expression(paste("NO "[X]," [",mu,"mol L"^"-1","]")), 
      xlab = "time [days]", ylim=c(0,90), xlim=c(0,16),
@@ -574,8 +562,6 @@ lines(tspan, out_bact[,12], col="red")
 lines(tspan, out_axenic_noEX[,12], col="blue",lty="dotted")
 lines(tspan, out_bact_noEX[,12], col="red",lty="dotted")
 
-
-
 # Si plot
 plot(tdinexp, siexpmax, type='n', 
      ylab = expression(paste("Si(OH) "[4]," [",mu,"mol L"^"-1","]")), 
@@ -606,15 +592,13 @@ legend("topright", legend=c("BAC+ exp","BAC- exp", "EXT BAC+","EXT BAC-", "EXT -
        lty=c(0,0,1,1,3,3), pch=c(1,1,NA,NA,NA,NA),
        box.lty=0, bg="transparent", cex=0.7)
 
-#############################################
-
 dev.off()
 
-
 #############################################################################
+### 5) estimate model costs (least sum of squares) #########################
+############################################################################
 
-#########
-#minimizing (least sum of squares) (MANUAL)
+## Model fit to axenic experiment
 # C
 # texp: 1  2  3  4  5  6  7  8  9 10 11 14 15 16
 # x0 <- c(C0, Chl0, N0, DIN0,
@@ -636,8 +620,7 @@ costTot <- sqrt( sum( (nmod-nexpout)^2/var(nexpout) ) +
                    sum( (dinmod -  DINexpout[-1])^2 / var(DINexpout[-1]))) 
 costTot
 
-##########################################################################
-
+### Model fit to bacteria enriched experiment
 cmod <- out_bact[c(1,101,201,301, 401, 501, 601, 701, 801, 901, 1001,  1301, 1401, 1501),2]
 costfc <- sqrt(sum((cexp - cmod)^2 ))
 costfc <- sqrt(sum(scale(cexp - cmod)^2 ))
@@ -663,9 +646,7 @@ costTot <- sqrt( sum( (nmod-nexp)^2/var(nexp) ) +
 costTot
 
 
-
-
-#####################################################
+#####Model fit to experiment without DOM excretion
 cmod <- out_bact_noEX[c(1,101,201,301, 401, 501, 601, 701, 801, 901, 1001,  1301, 1401, 1501),2]
 costfc <- sqrt(sum((cexp - cmod)^2 ))
 costfc <- sqrt(sum(scale(cexp - cmod)^2 ))
@@ -692,35 +673,26 @@ costTot
 
 
 
+################################################################
+#### 6) Automated tuning and sensitivity analyses ###############
+#################################################################
 
-
-
-
-
-
-
-
-###################################################
-# TUNING
-
-##############################################################
-
+# normalize data to similar ranges
 plot(texp, cexp, col="black")
 points(texp, nexp*10, col="red")
 points(texp, chlexp*10, col="green")
 points(tdinexp, DINexp/10, col="blue")
 
+# define observed data
 observed <- as.data.frame(cbind (c(rep("C",length(texp)),rep("Chl",length(texp)),rep("N",length(texp)),rep("DIN",length(tdinexp))),
                                  as.numeric(c(texp,texp,texp,tdinexp)),
                                  as.numeric(c(cexp,chlexp*10,nexp*10,(DINexp)/10))),stringsAsFactors = F)
 colnames(observed)<-c("name","time","val")
-#observed$err<- c(cerr, nerr, chlerr)  
+#observed$err<- c(cerr, nerr, chlerr)  # option to include weighting based on errror of measured data
 observed$time<-as.numeric(observed$time)
 observed$val<-as.numeric(observed$val)
 
-
 ####Cost function from FME
-
 require(FME)
 CostFUN <- function (pars) {
   out <- ode(x0, times = tspan, func = geider98v2,#_EPS_bact_131118, 
@@ -731,19 +703,22 @@ CostFUN <- function (pars) {
 }
 #x0 <- c(C0, Chl0, N0, DIN0, PSi0, Si0, bact0, 0, 0, don0, nh40) # 
 
+#estimate cost and plot residuals vs fitted plot
 CostFUN(pars)$model
 par(mfrow=c(1,1))
 plot(CostFUN(pars))#, ylim=c(-0.5,0.5))
 abline(h=0)
 
+# Sensitivity analysis
 Pars<-pars[c(11:21)]
 SFUN<- sensFun(CostFUN, Pars)
 summary(SFUN)
 #plot(SFUN, which = c("C","N","Chl"), lwd=2)
 #pairs(SFUN, which = c("C","N","Chl"), col=c("black","red","green"))
 
+# colineariyu analysis (Error if sensitivity of a parameter close to 0!)
 ident<-collin(SFUN)
-ident[ident$collinearity>20 & ident$N == 2,]
+ident[ident$collinearity>20 & ident$N == 2,] #subset of parameter combinations that are unidentifiable
 head(ident, n = 20)
 collin(SFUN, parset = c("n","kn"))
 
@@ -752,10 +727,9 @@ Pars<-pars[c(15,16:19,21)]
 SFUN<- sensFun(CostFUN, Pars)
 ident<-collin(SFUN)
 ident
-ident[ident$collinearity>20 & ident$N == 2,]
-#sens ks, Vmax, smin, nh4thresh is 0!?
+ident[ident$collinearity>20 & ident$N == 2,]#subset of parameter combinations that are unidentifiable
 
-
+# automated fitting
 lpars <- log(pars)
 CostFUN2 <- function(lpars){
   CostFUN(c(exp(lpars)))
@@ -764,11 +738,13 @@ Pars <- pars[c(15,16,19,20, 21)]
 lowbound <- c   ( 10,0.1,   0.5,      0.1,  0.01)
 highbound <- c  ( 100, 10,    9.3,      10,   0.5)
 
+# 1st Pseudorandom (global optimum)
 Fit <- modFit(f = CostFUN2, p = log(Pars), method="Pseudo",
               lower=log(lowbound), upper=log(highbound))
 Pars2 <- exp(coef(Fit))
 exp(coef(Fit))
 
+# 2 nelder mead (local optimum)
 Fit2 <- modFit(f = CostFUN2, p = log(Pars2), method="Nelder-Mead",
               lower=log(lowbound), upper=log(highbound))
 Pars3 <- exp(coef(Fit2))
