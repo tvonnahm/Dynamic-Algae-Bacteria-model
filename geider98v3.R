@@ -128,8 +128,8 @@ if (is.na(dndt)){ dndt <-0 }else {dndt <- dndt}
 
 # DIN consumption (Geider et al. 1998) and production by remineralisation
 # Remineralisation of refractory freshly excreted DON (xf rem N) and old DON (don remd)
-# Remineralisation only if C:N <10 (Tezuka 1990)
-if (C/N) < 10){ # option b: remineralisation after lag phase when (C>2){#
+# Remineralisation only if C:N <10 (Tezuka 1990) and after lag pahse for this experiment (4 days)
+if (Q > 0.1 & t > 4){ # 
   dnh4dt <- (-(Vcn2 / Q)* N +
                bact * xf * N * rem +
                bact * don * remd - 
