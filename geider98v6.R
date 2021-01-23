@@ -1,7 +1,7 @@
 ########################################################
 ########################################################
 ### Modelling script/function (extended model)#########
-### v2.0 by Tobias Reiner Vonnahme #####################
+### v6.0 by Tobias Reiner Vonnahme #####################
 ########################################################
 
 # Function for modelling Photosynthesis, Chlorophyll synthesis, and Nitrogen uptake
@@ -15,8 +15,8 @@
 # Remineralisation of excreted and background DON when C:N <10 (Tezuka 1990)
 # Remineralisation as function of bacteria (bact growth as logistic function)    
 
-# input x <- [C, Chl, N, DIN, pSi, dSi, 0, 0]
-# output - rates of change in C Chl and N and DIN pSi, dSi, VSi and Vcn
+# input x0 <- c(C0, Chl0, N0, DIN0, PSi0, Si0, bact0, 0, 0, don0, nh40,0)
+# output - rates of change in C Chl N NOx pSi, dSi, bactC, Vcn, donr, donl nh4
 
 #parameters and variables
 #___________________________________________________________
@@ -157,7 +157,8 @@ geider98v2 <- function(t,x,paramMod){
       ddonldt <- (xf * N)/14 * 1e3
       ddonrdt <- 0
     }
-    #IDEA : when rem happening: BacN from DON
+# Supply of BActeria N demand
+    # when rem happening: BacN from DON
     # when NH4 over threhs: Baxcn From NH4
     # when NH4 belwo thresh: Bacn from NO3
     
